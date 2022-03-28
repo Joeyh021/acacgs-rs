@@ -46,6 +46,14 @@ pub fn run(a: &Mesh, x: &mut [f32], b: &[f32]) -> RunInfo {
     rtrans = ddot_same(&r);
     t_ddot += Instant::now() - t_0;
 
+    #[cfg(feature = "verbose")]
+    {
+        normr = f32::sqrt(rtrans);
+        println!("Initial residual = {}", normr);
+    }
+
+    let mut k = 1;
+
     //if k ==1
     let t_0 = Instant::now();
     p.copy_from_slice(&r);
@@ -54,6 +62,9 @@ pub fn run(a: &Mesh, x: &mut [f32], b: &[f32]) -> RunInfo {
     //after the if/else
 
     normr = f32::sqrt(rtrans);
+
+    #[cfg(feature = "verbose")]
+    println!("Iteration = {} Residual = {}", k, normr);
 
     let t_0 = Instant::now();
     sparsemv(a, &p, &mut ap);
@@ -70,7 +81,6 @@ pub fn run(a: &Mesh, x: &mut [f32], b: &[f32]) -> RunInfo {
     xxpby(&mut r, -alpha, &ap);
     t_waxpby += Instant::now() - t_0;
 
-    let mut k = 1;
     while k < MAX_ITER && normr > TOLERANCE {
         oldrtrans = rtrans;
 
@@ -85,6 +95,9 @@ pub fn run(a: &Mesh, x: &mut [f32], b: &[f32]) -> RunInfo {
         t_waxpby += Instant::now() - t_0;
 
         normr = f32::sqrt(rtrans);
+
+        #[cfg(feature = "verbose")]
+        println!("Iteration = {} Residual = {}", k, normr);
 
         let t_0 = Instant::now();
         sparsemv(a, &p, &mut ap);

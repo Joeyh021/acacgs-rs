@@ -1,11 +1,17 @@
 pub fn ddot(x: &[f32], y: &[f32]) -> f32 {
-    x.iter()
-        .zip(y.iter())
-        .fold(0.0, |sum, (xi, yi)| sum + xi * yi)
+    let mut sum = 0.0;
+    for i in 0..x.len() {
+        sum += x[i] * y[i];
+    }
+    sum
 }
 
 pub fn ddot_same(x: &[f32]) -> f32 {
-    x.iter().fold(0.0, |sum, xi| sum + xi * xi)
+    let mut sum = 0.0;
+    for i in x {
+        sum += i * i
+    }
+    sum
 }
 
 pub fn wxmy(x: &[f32], y: &[f32], w: &mut [f32]) {

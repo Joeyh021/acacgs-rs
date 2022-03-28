@@ -29,43 +29,43 @@ fn main() {
     println!("Executable name:      {}", args().next().unwrap());
     println!("Dimensions:           {} {} {}", size.0, size.1, size.2);
     println!("Number of Iterations: {}", results.iters);
-    println!("Final Residual:       {}", results.normr);
+    println!("Final Residual:       {:e}", results.normr);
     println!("=== Time ===");
     println!("Total:           {:?}", results.t_total);
     println!("ddot Kernel:     {:?}", results.t_ddot);
     println!("waxpby Kernel:     {:?}", results.t_waxpby);
     println!("sparsemv Kernel:     {:?}", results.t_sparsemv);
     println!("=== MFLOP/s ===");
-    println!("Total:           {:?} floating point operations", ops);
-    println!("ddot Kernel:     {:?} floating point operations", ops_ddot);
+    println!("Total:           {:} floating point operations", ops);
+    println!("ddot Kernel:     {:} floating point operations", ops_ddot);
     println!(
-        "waxpby Kernel:     {:?} floating point operations",
+        "waxpby Kernel:     {:} floating point operations",
         ops_waxpby
     );
     println!(
-        "sparsemv Kernel:     {:?} floating point operations",
+        "sparsemv Kernel:     {:} floating point operations",
         ops_sparsemv
     );
     println!("=== Time ===");
     println!(
-        "Total:           {:?} MFLOP/s",
+        "Total:           {:e} MFLOP/s",
         ops as f64 / results.t_total.as_secs_f64() / 1.0e6
     );
     println!(
-        "ddot Kernel:     {:?} MFLOP/s",
+        "ddot Kernel:     {:e} MFLOP/s",
         ops_ddot as f64 / results.t_ddot.as_secs_f64() / 1.0e6
     );
     println!(
-        "waxpby Kernel:     {:?} MFLOP/s",
+        "waxpby Kernel:     {:e} MFLOP/s",
         ops_waxpby as f64 / results.t_waxpby.as_secs_f64() / 1.0e6
     );
     println!(
-        "sparsemv Kernel:     {:?} MFLOP/s",
+        "sparsemv Kernel:     {:e} MFLOP/s",
         ops_sparsemv as f64 / results.t_sparsemv.as_secs_f64() / 1.0e6
     );
     println!();
     println!(
-        "Difference between computed and exact = {}",
+        "Difference between computed and exact = {:e}",
         compute_residual(&x, &x_exact)
     );
 }
