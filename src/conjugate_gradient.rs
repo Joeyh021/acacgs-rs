@@ -49,7 +49,7 @@ pub fn run(a: &Mesh, x: &mut [f32], b: &[f32]) -> RunInfo {
     #[cfg(feature = "verbose")]
     {
         normr = f32::sqrt(rtrans);
-        println!("Initial residual = {}", normr);
+        println!("Initial residual = {:e}", normr);
     }
 
     let mut k = 1;
@@ -64,7 +64,7 @@ pub fn run(a: &Mesh, x: &mut [f32], b: &[f32]) -> RunInfo {
     normr = f32::sqrt(rtrans);
 
     #[cfg(feature = "verbose")]
-    println!("Iteration = {} Residual = {}", k, normr);
+    println!("Iteration = {} Residual = {:e}", k, normr);
 
     let t_0 = Instant::now();
     sparsemv(a, &p, &mut ap);
