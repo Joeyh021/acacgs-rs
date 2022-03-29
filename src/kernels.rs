@@ -2,9 +2,16 @@ use core::arch::x86_64::*;
 use rayon::prelude::*;
 
 pub fn ddot(x: &[f32], y: &[f32]) -> f32 {
+    let x = x.par_chunks_exact(8);
+    let y = y.par_chunks_exact(8);
+    let remainder = x
+        .remainder()
+        .iter()
+        .zip(y.remainder().iter())
+        .fold(0.0, |sum, (x, y)| sum + x * y);
+
     let s = x
-        .par_chunks_exact(8)
-        .zip(y.par_chunks_exact(8))
+        .zip(y)
         .fold(
             || unsafe { _mm256_setzero_ps() },
             |sum, (x, y)| unsafe {
@@ -17,17 +24,14 @@ pub fn ddot(x: &[f32], y: &[f32]) -> f32 {
             || unsafe { _mm256_setzero_ps() },
             |v1, v2| unsafe { _mm256_add_ps(v1, v2) },
         );
-    let mut sum = sum_m256(s);
-    for i in (x.len() - (x.len() % 8))..x.len() {
-        sum += x[i] * y[i]
-    }
-
-    sum
+    sum_m256(s) + remainder
 }
 
 pub fn ddot_same(x: &[f32]) -> f32 {
+    let x = x.par_chunks_exact(8);
+    let remainder = x.remainder().iter().fold(0.0, |sum, x| sum + x * x);
+
     let s = x
-        .par_chunks_exact(8)
         .fold(
             || unsafe { _mm256_setzero_ps() },
             |sum, x| unsafe {
@@ -39,11 +43,7 @@ pub fn ddot_same(x: &[f32]) -> f32 {
             || unsafe { _mm256_setzero_ps() },
             |v1, v2| unsafe { _mm256_add_ps(v1, v2) },
         );
-    let mut sum = sum_m256(s);
-    for xi in x.iter().skip(x.len() - (x.len() % 8)) {
-        sum += xi
-    }
-    sum
+    sum_m256(s) + remainder
 }
 
 pub fn wxmy(x: &[f32], y: &[f32], w: &mut [f32]) {
@@ -66,25 +66,25 @@ pub fn yxpby(x: &[f32], b: f32, y: &mut [f32]) {
 
 pub fn sparsemv(a: &crate::Mesh, x: &[f32], y: &mut [f32]) {
     y.par_iter_mut()
-        .zip(a.nnz.par_iter())
         .zip(a.values.par_iter())
         .zip(a.idx.par_iter())
-        .for_each(|(((y, nnz), values), idx)| unsafe {
-            let mut sum = _mm256_setzero_ps();
-
-            for i in (0..(*nnz / 8)).map(|i| i * 8) {
-                let vidx = _mm256_loadu_si256(idx.as_ptr().add(i) as *const __m256i);
-                let vx = _mm256_i32gather_ps::<4>(x.as_ptr(), vidx);
-                let vrow = _mm256_loadu_ps(values.as_ptr().add(i));
-                sum = _mm256_fmadd_ps(vx, vrow, sum);
-            }
-            let mut result = sum_m256(sum);
-
-            //add remainder
-            for i in (values.len() - values.len() % 8)..values.len() {
-                result += values[i] * x[idx[i] as usize]
-            }
-            *y = result
+        .for_each(|((y, values), idx)| {
+            let values = values.chunks_exact(8);
+            let idx = idx.chunks_exact(8);
+            *y = values
+                .remainder()
+                .iter()
+                .zip(idx.remainder().iter())
+                .fold(0.0, |sum, (v, i)| sum + v * x[*i as usize])
+                + sum_m256(values.zip(idx).fold(
+                    unsafe { _mm256_setzero_ps() },
+                    |sum, (val, i)| unsafe {
+                        let vidx = _mm256_loadu_si256(i.as_ptr() as *const __m256i);
+                        let vx = _mm256_i32gather_ps::<4>(x.as_ptr(), vidx);
+                        let vrow = _mm256_loadu_ps(val.as_ptr());
+                        _mm256_fmadd_ps(vrow, vx, sum)
+                    },
+                ));
         });
 }
 
