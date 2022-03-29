@@ -1,4 +1,5 @@
 #![allow(clippy::many_single_char_names)]
+#![feature(portable_simd)]
 mod conjugate_gradient;
 mod kernels;
 mod mesh;
