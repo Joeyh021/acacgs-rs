@@ -2,7 +2,7 @@ pub struct Mesh {
     pub nrow: usize,
     pub nnz: Vec<usize>,
     pub values: Vec<Vec<f32>>,
-    pub idx: Vec<Vec<usize>>,
+    pub idx: Vec<Vec<u32>>,
 }
 
 impl Mesh {
@@ -50,7 +50,10 @@ impl Mesh {
             nrow,
             nnz,
             values,
-            idx,
+            idx: idx
+                .into_iter()
+                .map(|v| v.into_iter().map(|i| i as u32).collect())
+                .collect(),
         }
     }
 }
