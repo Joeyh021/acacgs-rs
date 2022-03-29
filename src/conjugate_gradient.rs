@@ -12,7 +12,7 @@ pub struct RunInfo {
 }
 
 pub const MAX_ITER: u32 = 150;
-pub const TOLERANCE: f32 = 1.0e-6;
+pub const TOLERANCE: f32 = 0.0;
 
 pub fn run(a: &Mesh, x: &mut [f32], b: &[f32]) -> RunInfo {
     let t_begin = Instant::now();
