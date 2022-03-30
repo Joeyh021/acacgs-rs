@@ -7,6 +7,11 @@ use std::env::args;
 
 use mesh::Mesh;
 fn main() {
+    if args().len() != 4 {
+        eprintln!("Please specify size: x y z");
+        return;
+    }
+
     let size = args()
         .skip(1)
         .map(|s| s.parse::<isize>().expect("bad args"))
