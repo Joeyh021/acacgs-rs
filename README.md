@@ -15,3 +15,11 @@ The `remoterun.sh` script has been modified to run this. It'll compile it for yo
 
 ## Performance
 As it stands, it takes about 2.5 seconds for a 100x100x100 mesh, which is not that much slower than equivalent C code with a similar level of optimiation. If I get round to it, I might do some more detailed profiling and figure out where the performance difference lies.
+
+## Todo, Maybe
+- Try using [`ndarray`](https://github.com/rust-ndarray/ndarray) or [`nalgebra`](https://nalgebra.org/) to see if that yields any speedup
+  - `nalgebra` has some dedicated CSR stuff so it probably will do
+- Re-write using portable SIMD because I want to try the Neon unit on M1
+- More detailed benchmarks and profiling to get more performance data 
+- Maybe try run it on a GPU too for shits and giggles
+- Make it run faster
