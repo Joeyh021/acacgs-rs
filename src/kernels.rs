@@ -4,54 +4,53 @@ use rayon::prelude::*;
 pub fn ddot(x: &[f32], y: &[f32]) -> f32 {
     let x = x.par_chunks_exact(8);
     let y = y.par_chunks_exact(8);
-    let remainder = x
-        .remainder()
+    x.remainder()
         .iter()
         .zip(y.remainder().iter())
-        .fold(0.0, |sum, (x, y)| sum + x * y);
-
-    let s = x
-        .zip(y)
-        .fold(
-            || unsafe { _mm256_setzero_ps() },
-            |sum, (x, y)| unsafe {
-                let xv = _mm256_loadu_ps(x.as_ptr());
-                let yv = _mm256_loadu_ps(y.as_ptr());
-                _mm256_fmadd_ps(xv, yv, sum)
-            },
+        .fold(0.0, |sum, (x, y)| sum + x * y)
+        + sum_m256(
+            x.zip(y)
+                .fold(
+                    || unsafe { _mm256_setzero_ps() },
+                    |sum, (x, y)| unsafe {
+                        let xv = _mm256_loadu_ps(x.as_ptr());
+                        let yv = _mm256_loadu_ps(y.as_ptr());
+                        _mm256_fmadd_ps(xv, yv, sum)
+                    },
+                )
+                .reduce(
+                    || unsafe { _mm256_setzero_ps() },
+                    |v1, v2| unsafe { _mm256_add_ps(v1, v2) },
+                ),
         )
-        .reduce(
-            || unsafe { _mm256_setzero_ps() },
-            |v1, v2| unsafe { _mm256_add_ps(v1, v2) },
-        );
-    sum_m256(s) + remainder
 }
 
 pub fn ddot_same(x: &[f32]) -> f32 {
     let x = x.par_chunks_exact(8);
-    let remainder = x.remainder().iter().fold(0.0, |sum, x| sum + x * x);
-
-    let s = x
-        .fold(
-            || unsafe { _mm256_setzero_ps() },
-            |sum, x| unsafe {
-                let xv = _mm256_loadu_ps(x.as_ptr());
-                _mm256_fmadd_ps(xv, xv, sum)
-            },
+    x.remainder().iter().fold(0.0, |sum, x| sum + x * x)
+        + sum_m256(
+            x.fold(
+                || unsafe { _mm256_setzero_ps() },
+                |sum, x| unsafe {
+                    let xv = _mm256_loadu_ps(x.as_ptr());
+                    _mm256_fmadd_ps(xv, xv, sum)
+                },
+            )
+            .reduce(
+                || unsafe { _mm256_setzero_ps() },
+                |v1, v2| unsafe { _mm256_add_ps(v1, v2) },
+            ),
         )
-        .reduce(
-            || unsafe { _mm256_setzero_ps() },
-            |v1, v2| unsafe { _mm256_add_ps(v1, v2) },
-        );
-    sum_m256(s) + remainder
 }
 
+//not vectorised because the semantics are easy enough that llvm does it for us
 pub fn wxmy(x: &[f32], y: &[f32], w: &mut [f32]) {
     w.par_iter_mut()
         .zip(x.par_iter().zip(y.par_iter()))
         .for_each(|(w, (x, y))| *w = x - y);
 }
 
+//have used explicit scalar fma tho to coerce it into playing nice
 pub fn xxpby(x: &mut [f32], b: f32, y: &[f32]) {
     x.par_iter_mut()
         .zip(y.par_iter())

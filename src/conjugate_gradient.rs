@@ -14,6 +14,14 @@ pub struct RunInfo {
 pub const MAX_ITER: u32 = 150;
 pub const TOLERANCE: f32 = 0.0;
 
+macro_rules! time_it {
+    ($fn: expr) => {{
+        let t0 = Instant::now();
+        $fn;
+        Instant::now() - t0
+    }};
+}
+
 pub fn run(a: &Mesh, x: &mut [f32], b: &[f32]) -> RunInfo {
     let t_begin = Instant::now();
     let mut t_ddot = Duration::ZERO;
@@ -30,21 +38,13 @@ pub fn run(a: &Mesh, x: &mut [f32], b: &[f32]) -> RunInfo {
     let mut rtrans: f32;
     let mut oldrtrans: f32;
 
-    let t_0 = Instant::now();
-    p.copy_from_slice(x);
-    t_waxpby += Instant::now() - t_0;
+    t_waxpby += time_it!(p.copy_from_slice(x));
 
-    let t_0 = Instant::now();
-    sparsemv(a, &p, &mut ap);
-    t_sparsemv += Instant::now() - t_0;
+    t_sparsemv += time_it!(sparsemv(a, &p, &mut ap));
 
-    let t_0 = Instant::now();
-    wxmy(b, &ap, &mut r);
-    t_waxpby += Instant::now() - t_0;
+    t_waxpby += time_it!(wxmy(b, &ap, &mut r));
 
-    let t_0 = Instant::now();
-    rtrans = ddot_same(&r);
-    t_ddot += Instant::now() - t_0;
+    t_ddot += time_it!(rtrans = ddot_same(&r));
 
     #[cfg(feature = "verbose")]
     {
@@ -55,9 +55,7 @@ pub fn run(a: &Mesh, x: &mut [f32], b: &[f32]) -> RunInfo {
     let mut k = 1;
 
     //if k ==1
-    let t_0 = Instant::now();
-    p.copy_from_slice(&r);
-    t_waxpby += Instant::now() - t_0;
+    t_waxpby += time_it!(p.copy_from_slice(&r));
 
     //after the if/else
 
@@ -66,53 +64,39 @@ pub fn run(a: &Mesh, x: &mut [f32], b: &[f32]) -> RunInfo {
     #[cfg(feature = "verbose")]
     println!("Iteration = {} Residual = {:e}", k, normr);
 
-    let t_0 = Instant::now();
-    sparsemv(a, &p, &mut ap);
-    t_sparsemv += Instant::now() - t_0;
+    t_sparsemv += time_it!(sparsemv(a, &p, &mut ap));
 
-    let t_0 = Instant::now();
-    let mut alpha = ddot(&p, &ap);
-    t_ddot += Instant::now() - t_0;
+    let mut alpha;
+    t_ddot += time_it!(alpha = ddot(&p, &ap));
 
     alpha = rtrans / alpha;
 
-    let t_0 = Instant::now();
-    xxpby(x, alpha, &p);
-    xxpby(&mut r, -alpha, &ap);
-    t_waxpby += Instant::now() - t_0;
+    t_waxpby += time_it!(xxpby(x, alpha, &p));
+    t_waxpby += time_it!(xxpby(&mut r, -alpha, &ap));
 
     while k < MAX_ITER && normr > TOLERANCE {
         oldrtrans = rtrans;
 
-        let t_0 = Instant::now();
-        rtrans = ddot_same(&r);
-        t_ddot += Instant::now() - t_0;
+        t_ddot += time_it!(rtrans = ddot_same(&r));
 
         let beta = rtrans / oldrtrans;
 
-        let t_0 = Instant::now();
-        yxpby(&r, beta, &mut p);
-        t_waxpby += Instant::now() - t_0;
+        t_waxpby += time_it!(yxpby(&r, beta, &mut p));
 
         normr = f32::sqrt(rtrans);
 
         #[cfg(feature = "verbose")]
         println!("Iteration = {} Residual = {}", k, normr);
 
-        let t_0 = Instant::now();
-        sparsemv(a, &p, &mut ap);
-        t_sparsemv += Instant::now() - t_0;
+        t_sparsemv += time_it!(sparsemv(a, &p, &mut ap));
 
-        let t_0 = Instant::now();
-        let mut alpha = ddot(&p, &ap);
-        t_ddot += Instant::now() - t_0;
+        let mut alpha;
+        t_ddot += time_it!(alpha = ddot(&p, &ap));
 
         alpha = rtrans / alpha;
 
-        let t_0 = Instant::now();
-        xxpby(x, alpha, &p);
-        xxpby(&mut r, -alpha, &ap);
-        t_waxpby += Instant::now() - t_0;
+        t_waxpby += time_it!(xxpby(x, alpha, &p));
+        t_waxpby += time_it!(xxpby(&mut r, -alpha, &ap));
 
         k += 1;
     }
